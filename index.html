@@ -1,0 +1,110 @@
+<html>
+    <head>
+        <style>
+            html, body {
+                width:  100%;
+                height: 100%;
+                margin: 0;
+            }            
+        </style>
+    </head>
+    <body>
+        <canvas id="canvas"></canvas>  
+        <script>
+            var canvas = document.getElementById("canvas");
+            var ctx = canvas.getContext("2d");
+
+            var middle = 5;
+            var radius = 5;
+
+            var dictionary = [];
+
+            function getTransformedPoint(x, y) {
+                const transform = ctx.getTransform();
+                const transformedX = x - transform.e;
+                const transformedY = y - transform.f;
+                return { x: transformedX, y: transformedY };
+            }
+
+            canvas.addEventListener('mousemove', event => {
+                const transformedCursorPosition = getTransformedPoint(event.offsetX, event.offsetY);
+                //console.log(transformedCursorPosition);
+            });
+
+            function fancy(number) {
+                const places = Math.max(0, Math.ceil(Math.log10(5.0 / radius)));
+                number = Math.floor(number);
+                if (number < 0) return "";
+                if (number >= dictionary.length) return "";
+                return dictionary[number];
+                //return dictionary[number] + " " + number.toFixed(places);
+                
+                //return number.toFixed(places).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                //return number.toLocaleString('en-US');
+                //return number.toFixed(places);
+            }
+
+            function draw() {
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "#00AAFF";
+                ctx.fillRect(20, 20, canvas.width - 40, canvas.height - 40);
+
+                ctx.fillStyle = "#0033AA";
+                ctx.font = '4em serif';
+                ctx.textBaseline = 'middle';
+                ctx.textAlign = "center";
+
+                const padding = 60;
+
+                for (let x = -5; x <= 5; ++x) {
+                    ctx.fillText(fancy(middle + (radius * x / 5.0)), canvas.width / 2, padding + (canvas.height - padding - padding) * (x + 5) / 10.0);
+                }
+
+                // ctx.fillText(fancy(middle - radius), canvas.width / 2, padding);
+                //ctx.fillText(fancy(middle), canvas.width / 2, canvas.height / 2);
+                // ctx.fillText(fancy(middle + radius), canvas.width / 2, canvas.height - padding);
+            }
+
+            function fixSize() {
+                ctx.canvas.width  = window.innerWidth;
+                ctx.canvas.height = window.innerHeight;
+            }
+
+            fixSize();
+
+            window.addEventListener('resize', function(event) {
+                fixSize();
+                draw();
+            }, true);
+
+            function process(data) {
+                dictionary = data;
+
+                middle = data.length / 2;
+                radius = (data.length / 2) - 0.5;
+
+                //console.log(data.length);
+                //console.log(data[data.length - 1]);
+                draw();
+                canvas.onmousewheel = function (event){
+                    var wheel = event.wheelDelta/120;
+                    if (event.shiftKey) {
+                        //console.log("shift");
+                    }
+                    //console.log(wheel);
+                    const mouse = getTransformedPoint(event.offsetX, event.offsetY);
+                    //console.log(mouse);
+                    radius = radius * Math.pow(0.9, wheel);
+                    const position = ((mouse.y / canvas.height) * 2.0) - 1.0;
+                    middle = middle + (position * radius / 10.0);
+                    draw();
+                }
+            }
+            //console.log("Hello, Edric!");
+            fetch('words_dictionary.json')
+                .then(response => response.json())
+                .then(data => process(Object.keys(data)));
+        </script>
+    </body>
+</html>
